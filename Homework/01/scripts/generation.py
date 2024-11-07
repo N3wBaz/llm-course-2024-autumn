@@ -5,7 +5,6 @@ from typing import Optional
 from scripts.model import Model
 from scripts.tokenizer import ByteTokenizer
 
-
 def generate(
         model: Model,
         tokenizer: ByteTokenizer,
@@ -39,27 +38,9 @@ def generate(
     -----------
     str
         Сгенерированная строка текста, декодированная с помощью токенизатора.
-
-    Пример:
-    --------
-    >>> model = Model()
-    >>> tokenizer = ByteTokenizer()
-    >>> text = generate(model, tokenizer, temperature=0.7, top_k=10, max_length=100)
-    >>> print(text)
-    "Пример сгенерированного текста..."
-
-    Логика работы:
-    --------------
-    - Если температура > 0, производится выбор сэмплированием токенов в зависимости от их
-      вероятностей, если же температура = 0, выбирается наиболее вероятный токен.
-    - Если указан параметр top_k, модель выбирает следующий токен только из первых k наиболее
-      вероятных токенов.
-    - Процесс генерации завершается при достижении максимальной длины или если встречен токен
-      окончания последовательности (eos_token_id).
     """
     do_sample = temperature > 0
     gen_ids = []
-    # Изначально подидим в модель токен начала текста и нулевое состояние
     hx = None
     tokens = torch.tensor([tokenizer.bos_token_id], dtype=torch.long)
 
@@ -68,19 +49,25 @@ def generate(
         with torch.no_grad():
             # Получаем логиты следующего токена и следующее состояние
             logits, hx = model(tokens, hx)
+            
             if not do_sample:
-                # Выбираем наиболее вероятный токен
-                new_token = <YOUR CODE HERE>
+                # Выбираем наиболее вероятный токен (аргмакс)
+                new_token = torch.argmax(logits, dim=-1).item()
             else:
                 logits /= temperature
                 # Получаем вероятностное распределение следующего токена
-                p = F.softmax(logits, -1)[0].numpy()
-                ids = np.arange(len(p))
+                p = F.softmax(logits, dim=-1)[0].numpy()  # Применяем softmax к логитам
+                ids = np.arange(len(p))  # Индексы всех токенов
+
                 if top_k is not None:
-                    # Выбираем top-k наиболее вероятных токенов. Используйте np.argpartition(...)
-                    ids = <YOUR CODE HERE>
-                    p = p[ids] / p[ids].sum()
-                new_token = np.random.choice(ids, p=p)
+                    # Выбираем top_k наиболее вероятных токенов
+                    top_k_indices = np.argpartition(p, -top_k)[-top_k:]  # Находим индексы top_k токенов
+                    p = p[top_k_indices]  # Вероятности для top_k
+                    p /= p.sum()  # Нормализуем вероятности
+                    new_token = np.random.choice(top_k_indices, p=p)  # Выбираем из top_k
+                else:
+                    # Если top_k не задан, просто выбираем на основе всех вероятностей
+                    new_token = np.random.choice(ids, p=p)
 
         if new_token == tokenizer.eos_token_id:
             break

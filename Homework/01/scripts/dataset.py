@@ -3,7 +3,6 @@ from tqdm import tqdm
 from torch.utils.data import Dataset
 from scripts.tokenizer import ByteTokenizer
 
-
 class MyDataset(Dataset):
     """
     Класс MyDataset представляет собой набор данных для работы с текстами, закодированными с помощью токенизатора.
@@ -30,23 +29,19 @@ class MyDataset(Dataset):
         Возвращает последовательность токенов для текста по индексу, обрезанную до max_length.
     __len__() -> int
         Возвращает количество текстов в наборе данных
-
-    Пример:
-    ----------
-    >>> texts = ["Привет, мир!", "Это тест."]
-    >>> tokenizer = ByteTokenizer()  # Предположим, что токенизатор уже реализован
-    >>> dataset = MyDataset(texts, tokenizer, max_length=10)
-    >>> len(dataset)
-    2
-    >>> dataset[0]
-    [tokenizer.bos_token_id, 1, 2, 3, tokenizer.eos_token_id]  # Пример токенов
     """
+    
     def __init__(self, texts: List[str], tokenizer: ByteTokenizer, max_length: Optional[int] = None):
         self.max_length = max_length
         self.data = []
         for text in tqdm(texts):
-            # Получаем список токенов (номеров) для данного текста и добавляем к началу и концу спецтокены bos, eos (см. пример)
-            token_ids = <YOUR CODE HERE>
+            # Токенизируем текст, добавляем специальные токены: bos_token_id (начало) и eos_token_id (конец)
+            token_ids = [tokenizer.bos_token_id] + tokenizer.encode(text) + [tokenizer.eos_token_id]
+            
+            # Если max_length задана, обрезаем до нее
+            if self.max_length is not None:
+                token_ids = token_ids[:self.max_length]
+            
             self.data.append(token_ids)
 
     def __getitem__(self, idx: int) -> List[int]:
@@ -63,8 +58,8 @@ class MyDataset(Dataset):
         List[int]
             Усеченный список номеров токенов
         """
-        return <YOUR CODE HERE>
+        return self.data[idx]
 
     def __len__(self) -> int:
         """Возвращает количество текстов в наборе данных."""
-        return <YOUR CODE HERE>
+        return len(self.data)

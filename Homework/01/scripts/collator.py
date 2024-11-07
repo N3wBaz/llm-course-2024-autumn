@@ -4,6 +4,7 @@ from torch.nn.utils.rnn import pad_sequence
 from torch import Tensor
 
 
+# 
 class Collator:
     """
     Класс Collator используется для дополнения (padding) списков разной длины
@@ -43,6 +44,8 @@ class Collator:
                     [4, 5, 0],
                     [6, 0, 0]])
         """
+        # Преобразуем каждый список в тензор
         data = [torch.tensor(x, dtype=torch.long) for x in data]
-        data = pad_sequence(<YOUR CODE HERE>)
+        # Применяем функцию pad_sequence с указанием padding_value
+        data = pad_sequence(data, batch_first=True, padding_value=self.padding_value)
         return data
